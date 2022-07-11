@@ -6,9 +6,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:message/ui/contacts_page.dart';
+import 'package:message/model/contact_item.dart';
+import 'package:message/model/message_item.dart';
 import 'package:message/utilities/app_data.dart';
 import 'package:message/utilities/payload.dart';
+import 'package:message/widget/message_item_view.dart';
 import 'package:provider/provider.dart';
 
 class MessagePage extends StatefulWidget {
@@ -26,9 +28,9 @@ class MessagePage extends StatefulWidget {
 class _MessagePageState extends State<MessagePage> {
   late ContactItem contactItem;
   List<MessageItem> messages = [];
-  List<MessageWidget> get _messages {
+  List<MessageItemView> get _messages {
     return messages
-        .map((message) => MessageWidget(
+        .map((message) => MessageItemView(
               message: message,
               sender: contactItem.phoneNumber,
             ))
@@ -215,83 +217,6 @@ class _MessagePageState extends State<MessagePage> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class MessageWidget extends StatelessWidget {
-  const MessageWidget({
-    Key? key,
-    required this.message,
-    required this.sender,
-  }) : super(key: key);
-
-  final MessageItem message;
-  final String sender;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      alignment: message.sender == sender
-          ? Alignment.centerLeft
-          : Alignment.centerRight,
-      child: Container(
-        padding: const EdgeInsets.all(5),
-        margin: const EdgeInsets.all(1),
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: RichText(
-          textAlign: message.sender == sender ? TextAlign.end : TextAlign.start,
-          text: TextSpan(
-            text: message.body,
-            style: Theme.of(context).textTheme.bodyText1,
-            children: [
-              TextSpan(
-                text: '    ' +
-                    DateTime.fromMillisecondsSinceEpoch(int.parse(message.time))
-                        .toString()
-                        .substring(8, 16),
-                style: Theme.of(context).textTheme.caption,
-                // style: const TextStyle(
-                //   backgroundColor: Colors.grey,
-                // ),
-              ),
-              // WidgetSpan(
-              //   child: Container(
-              //     alignment: Alignment.centerRight,
-              //     child: Container(
-              //       width: 15,
-              //       height: 5,
-              //       color: Colors.red,
-              //     ),
-              //   ),
-              // ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class MessageItem {
-  final String sender;
-  final String body;
-  final String time;
-  const MessageItem({this.sender = '', this.body = '', this.time = ''});
-  Map<String, dynamic> toJson() => {
-        'sender': sender,
-        'body': body,
-        'time': time,
-      };
-
-  factory MessageItem.fromJson(Map<dynamic, dynamic> json) {
-    return MessageItem(
-      sender: json['sender'] as String,
-      body: json['body'] as String,
-      time: json['time'] as String,
     );
   }
 }

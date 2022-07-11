@@ -2,13 +2,13 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:message/ui/contacts_page.dart';
+import 'package:message/utilities/image_utilies.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -19,8 +19,8 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   File? pickedImage;
-  final _nameController = TextEditingController(text: 'Redmi');
-  final _numberController = TextEditingController(text: '1763010362');
+  final _nameController = TextEditingController(text: 'Emulator');
+  final _numberController = TextEditingController(text: '1638705256');
   final _verificationCodeController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
@@ -43,6 +43,7 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
           )
         : null;
+    _verificationCodeController.addListener(() => setState(() {}));
   }
 
   @override
@@ -79,7 +80,8 @@ class _SignUpPageState extends State<SignUpPage> {
                   child: Column(
                     children: [
                       TextFormField(
-                        style: const TextStyle(fontSize: 30),
+                        scrollPadding: EdgeInsets.zero,
+                        style: const TextStyle(fontSize: 20),
                         controller: _verificationCodeController,
                         decoration: InputDecoration(
                           labelText: 'OTP',
@@ -109,13 +111,17 @@ class _SignUpPageState extends State<SignUpPage> {
                           : SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: () {
-                                  if (_verificationFormKey.currentState
-                                          ?.validate() ??
-                                      false) {
-                                    _verify();
-                                  }
-                                },
+                                onPressed:
+                                    _verificationCodeController.text.length != 6
+                                        ? null
+                                        : () {
+                                            var valid = _verificationFormKey
+                                                .currentState
+                                                ?.validate();
+                                            if (valid ?? false) {
+                                              _verify();
+                                            }
+                                          },
                                 child: const Padding(
                                   padding: EdgeInsets.all(8),
                                   child: Text(
@@ -131,88 +137,7 @@ class _SignUpPageState extends State<SignUpPage> {
               ] else ...[
                 //Profile Image
                 GestureDetector(
-                  onTap: () async {
-                    // // show bottom dialog to select image source
-                    // final source = await showModalBottomSheet(
-                    //   context: context,
-                    //   builder: (_) => SizedBox(
-                    //     height: 200,
-                    //     width: MediaQuery.of(context).size.width - 200,
-                    //     child: Column(
-                    //       mainAxisAlignment: MainAxisAlignment.center,
-                    //       children: [
-                    //         const Text(
-                    //           'Select Image Source',
-                    //           style: TextStyle(fontSize: 30),
-                    //         ),
-                    //         const SizedBox(height: 20),
-                    //         SizedBox(
-                    //           width: MediaQuery.of(context).size.width / 2,
-                    //           child: ElevatedButton(
-                    //             child: const ListTile(
-                    //               leading: Icon(Icons.camera_alt),
-                    //               title: Text(
-                    //                 'Camera',
-                    //                 style: TextStyle(fontSize: 20),
-                    //               ),
-                    //             ),
-                    //             onPressed: () {
-                    //               Navigator.pop(context, ImageSource.camera);
-                    //             },
-                    //           ),
-                    //         ),
-                    //         const SizedBox(height: 10),
-                    //         SizedBox(
-                    //           width: MediaQuery.of(context).size.width / 2,
-                    //           child: ElevatedButton(
-                    //             child: const ListTile(
-                    //               leading: Icon(Icons.photo_library),
-                    //               title: Text(
-                    //                 'Gallery',
-                    //                 style: TextStyle(fontSize: 20),
-                    //               ),
-                    //             ),
-                    //             onPressed: () {
-                    //               Navigator.pop(context, ImageSource.gallery);
-                    //             },
-                    //           ),
-                    //         ),
-                    //       ],
-                    //     ),
-                    //   ),
-                    // );
-                    // if (source == null) return;
-                    // var imageFile = await ImagePicker().pickImage(
-                    //   source: source,
-                    // );
-                    // if (imageFile != null) {
-                    //   log('${imageFile.name}:${imageFile.mimeType}',
-                    //       name: 'image selected');
-                    //   pickedImage = File(imageFile.path);
-                    //   log(pickedImage!.path, name: 'pickedImage');
-                    //   setState(() {});
-                    // }
-                    try {
-                      var filePickerResult =
-                          await FilePicker.platform.pickFiles(
-                        dialogTitle: 'Select Profile Image',
-                        type: FileType.image,
-                        onFileLoading: (status) {
-                          log('$status', name: 'file loading');
-                        },
-                      );
-                      log('$filePickerResult', name: 'filePickerResult');
-                      setState(() {
-                        pickedImage = filePickerResult == null
-                            ? null
-                            : File(filePickerResult.files.single.path!);
-                      });
-                    } on PlatformException catch (e) {
-                      log('Unsupported operation' + e.toString());
-                    } catch (e) {
-                      log(e.toString());
-                    }
-                  },
+                  onTap: _pickProfileImage,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 20),
                     height: 150,
@@ -308,38 +233,32 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
+  void _pickProfileImage() async {
+    pickedImage = await ImageUtilities.pickImage(context);
+    setState(() {});
+  }
+
   Future<Map<String, String>?> _uploadImage() async {
     if (pickedImage == null) return null;
-    final ref = FirebaseStorage.instance
-        .ref()
-        .child('users_profiler_pictures/${pickedImage!.path.split('/').last}');
-    final uploadTask = ref.putFile(pickedImage!);
-    await for (final snapshot in uploadTask.snapshotEvents) {
-      log(
-        '${snapshot.bytesTransferred / snapshot.totalBytes * 100}%',
-        name: 'snapshot',
-      );
-      log('$snapshot', name: 'snapshot');
-      if (snapshot.state == TaskState.success) {
-        return {
-          'fulPath': snapshot.ref.fullPath,
-          'url': await snapshot.ref.getDownloadURL(),
-        };
-      } else if (snapshot.state == TaskState.error) {
-        log(snapshot.state.toString(), name: 'snapshot error');
-        return null;
-      }
-    }
-    return null;
+    return ImageUtilities.uploadImage(
+      imageFile: pickedImage!,
+      fileName: FirebaseAuth.instance.currentUser!.uid +
+          '_' +
+          pickedImage!.path.split('/').last,
+    );
   }
 
   void _nextPage() async {
     await _auth.currentUser!.updateDisplayName(_nameController.text);
     var token = await FirebaseMessaging.instance.getToken();
     var uploadedMetadata = await _uploadImage();
-    await FirebaseFirestore.instance
-        .doc('users/${_auth.currentUser!.phoneNumber}')
-        .set({
+    var userRef = FirebaseFirestore.instance
+        .doc('users/${_auth.currentUser!.phoneNumber}');
+    var user = (await userRef.get()).data();
+    if (user?['image']?['path'] != null) {
+      FirebaseStorage.instance.ref().child(user!['image']['path']).delete();
+    }
+    await userRef.set({
       'token': token,
       'name': _nameController.text,
       'uid': _auth.currentUser!.uid,

@@ -1,12 +1,12 @@
 import 'dart:developer';
 
-import 'package:badges/badges.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:message/ui/message_page.dart';
+import 'package:message/model/contact_item.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:message/ui/profile_page.dart';
+import 'package:message/widget/contact_item_view.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
@@ -101,7 +101,7 @@ class _ContactsPageState extends State<ContactsPage> {
           ),
         ),
         actions: [
-          ElevatedButton(
+          TextButton(
             onPressed: () async {
               Navigator.of(context).pushNamed(ProfilePage.routeName);
             },
@@ -120,100 +120,6 @@ class _ContactsPageState extends State<ContactsPage> {
       ),
     );
   }
-}
-
-class ContactItemView extends StatelessWidget {
-  const ContactItemView({Key? key, required this.contact}) : super(key: key);
-
-  final ContactItem contact;
-
-  String _badgetext(String s) {
-    return s.length > 2 ? '9..' : s;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Hero(
-        tag: contact.name,
-        child: CircleAvatar(
-          backgroundImage:
-              contact.image == null ? null : NetworkImage(contact.image ?? ''),
-          child: contact.image != null ? null : Text(contact.name[0]),
-        ),
-      ),
-      title: Text(
-        contact.displayName + ' (${contact.name})',
-      ),
-      subtitle: Text(contact.lastMessage),
-      trailing: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Badge(
-            badgeColor: Colors.blue.shade300,
-            showBadge: contact.unread,
-            badgeContent: SizedBox(
-              width: 18,
-              height: 18,
-              child: Text(
-                contact.image == null ? _badgetext('100') : _badgetext('10'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          Text(contact.status),
-        ],
-      ),
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          MessagePage.routeName,
-          arguments: contact,
-        );
-      },
-    );
-  }
-}
-
-class ContactItem {
-  final String name;
-  final String displayName;
-  final String? image;
-  final String status;
-  final String lastMessage;
-  final bool unread;
-  final String token;
-  final String uid;
-  final String phoneNumber;
-  ContactItem({
-    this.name = '',
-    this.displayName = '',
-    this.image,
-    this.status = 'online',
-    this.lastMessage = 'Hey, how\'s it going?',
-    this.unread = false,
-    this.token = '',
-    this.uid = '',
-    this.phoneNumber = '',
-  });
-  ContactItem.fromJson(
-    Map<String, dynamic> json, {
-    String? displayName,
-    String? status,
-    String? lastMessage,
-    bool? unread,
-  })  : name = json['name'] as String,
-        image = (json['image'] as Map?)?['url'],
-        token = json['token'] as String,
-        uid = json['uid'] as String,
-        phoneNumber = json['phone'] as String,
-        displayName = displayName ?? json['name'] as String,
-        status = status ?? 'offline',
-        lastMessage = lastMessage ?? '',
-        unread = unread ?? false;
 }
 
 extension<E> on List<E> {
